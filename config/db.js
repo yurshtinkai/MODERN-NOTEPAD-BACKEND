@@ -103,9 +103,9 @@ function parseSsl(flag) {
   const value = String(flag).toLowerCase();
   if (value === 'true' || value === 'required' || value === 'on') {
     // Many managed MySQL providers require SSL but use public CA; adjust if needed
-    return { rejectUnauthorized: true };
+    return { rejectUnauthorized: false };
   }
   if (value === 'false' || value === 'off') return undefined;
   // Allow custom modes later
-  return { rejectUnauthorized: true };
+  return { rejectUnauthorized: false };
 }
