@@ -53,6 +53,11 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
 
+  // Validate input
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Please provide both username and password' });
+  }
+
   try {
     // Check for user
     const [users] = await pool.query('SELECT * FROM notepad_users WHERE username = ?', [
@@ -60,7 +65,14 @@ const loginUser = async (req, res) => {
     ]);
     const user = users[0];
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (isPasswordValid) {
       res.json({
         token: generateToken(user.id),
         user: {
@@ -72,7 +84,7 @@ const loginUser = async (req, res) => {
       res.status(400).json({ message: 'Invalid credentials' });
     }
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
