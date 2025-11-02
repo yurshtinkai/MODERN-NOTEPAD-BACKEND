@@ -12,16 +12,28 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  // Trim whitespace from inputs
+  if (username) username = username.trim();
+  if (password) password = password.trim();
 
   if (!username || !password) {
     return res.status(400).json({ message: 'Please add all fields' });
   }
 
+  // Additional validation
+  if (username.length < 3) {
+    return res.status(400).json({ message: 'Username must be at least 3 characters' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters' });
+  }
+
   try {
-    // Check if user exists
+    // Check if user exists - using BINARY for case-sensitive match
     const [userExists] = await pool.query(
-      'SELECT * FROM notepad_users WHERE username = ?',
+      'SELECT * FROM notepad_users WHERE BINARY username = ?',
       [username]
     );
 
@@ -39,11 +51,12 @@ const registerUser = async (req, res) => {
       [username, hashedPassword]
     );
 
+    console.log(`User registered successfully: ${username}`);
     res.status(201).json({
       message: 'User registered successfully. Please login.',
     });
   } catch (error) {
-    console.error(error);
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -51,7 +64,11 @@ const registerUser = async (req, res) => {
 // @desc    Authenticate a user (login)
 // @route   POST /api/auth/login
 const loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  let { username, password } = req.body;
+
+  // Trim whitespace from inputs
+  if (username) username = username.trim();
+  if (password) password = password.trim();
 
   // Validate input
   if (!username || !password) {
@@ -59,13 +76,16 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    // Check for user
-    const [users] = await pool.query('SELECT * FROM notepad_users WHERE username = ?', [
-      username,
-    ]);
+    // Check for user - using case-insensitive comparison with LOWER() or BINARY for exact match
+    // Using BINARY for case-sensitive match (as stored)
+    const [users] = await pool.query(
+      'SELECT * FROM notepad_users WHERE BINARY username = ?', 
+      [username]
+    );
     const user = users[0];
 
     if (!user) {
+      console.log(`Login attempt failed: User "${username}" not found`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -73,6 +93,7 @@ const loginUser = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (isPasswordValid) {
+      console.log(`Login successful for user: ${user.username}`);
       res.json({
         token: generateToken(user.id),
         user: {
@@ -81,6 +102,7 @@ const loginUser = async (req, res) => {
         },
       });
     } else {
+      console.log(`Login attempt failed: Invalid password for user "${username}"`);
       res.status(400).json({ message: 'Invalid credentials' });
     }
   } catch (error) {
