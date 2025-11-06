@@ -31,9 +31,9 @@ const registerUser = async (req, res) => {
   }
 
   try {
-    // Check if user exists - using BINARY for case-sensitive match
+    // Check if user exists (case-insensitive)
     const [userExists] = await pool.query(
-      'SELECT * FROM notepad_users WHERE BINARY username = ?',
+      'SELECT * FROM notepad_users WHERE LOWER(username) = LOWER(?)',
       [username]
     );
 
@@ -76,10 +76,9 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    // Check for user - using case-insensitive comparison with LOWER() or BINARY for exact match
-    // Using BINARY for case-sensitive match (as stored)
+    // Case-insensitive username lookup to avoid first-attempt failures due to casing
     const [users] = await pool.query(
-      'SELECT * FROM notepad_users WHERE BINARY username = ?', 
+      'SELECT * FROM notepad_users WHERE LOWER(username) = LOWER(?)', 
       [username]
     );
     const user = users[0];

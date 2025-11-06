@@ -40,6 +40,11 @@ app.use(express.json()); // Parses incoming JSON requests
 app.use('/api/auth', authRoutes);
 app.use('/api/notes', noteRoutes);
 
+// Lightweight health endpoint for warm-up checks
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Test route
 app.get('/', (req, res) => {
   res.send('Modern Notepad API is running...');
