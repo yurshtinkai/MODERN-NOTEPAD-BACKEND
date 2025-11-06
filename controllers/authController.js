@@ -106,7 +106,13 @@ const loginUser = async (req, res) => {
     }
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    // Provide more specific error messages for debugging
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      console.error('Database connection error:', error.message);
+      res.status(503).json({ message: 'Service temporarily unavailable. Please try again.' });
+    } else {
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 };
 
